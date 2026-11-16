@@ -1,7 +1,11 @@
 # chatgpt-images-for-claude
 
-A Claude Code skill that makes images with ChatGPT's image model without leaving Claude Code,
-and without an OpenAI API key.
+![Distracted boyfriend meme: "You" looks back at "ChatGPT Images" while "Claude" holds your hand](assets/love-triangle-meme.jpg)
+
+Do you love using Claude but wish it could generate ChatGPT quality images?
+
+This is a Claude Code skill that makes images with ChatGPT's image model without leaving Claude
+Code, and without an OpenAI API key.
 
 Claude writes the prompt. The Codex CLI, signed in with your ChatGPT account, runs its built-in
 `image_gen` tool. Claude reads the result and checks any on-image text letter by letter. A small
