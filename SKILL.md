@@ -1,5 +1,5 @@
 ---
-name: chatgpt-images-for-claude
+name: chatgpt-imagegen
 description: >
   Generate or edit images with ChatGPT's image model straight from Claude Code, through the Codex
   CLI's built-in image_gen tool (ChatGPT sign-in, no OpenAI API key), then finish them to spec:
@@ -15,7 +15,7 @@ license: MIT
 user-invocable: true
 argument-hint: "<what to make> [output folder] [size/preset] [format] [padding] [variants]"
 metadata:
-  version: "1.0.0"
+  version: "1.0.1"
   category: images
 ---
 

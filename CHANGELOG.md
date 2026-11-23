@@ -3,6 +3,16 @@
 All notable changes to this skill are listed here. Versions follow [semver](https://semver.org/):
 patch = fixes, minor = new presets or flags, major = a change to the manifest format.
 
+## [1.0.1] - 2026-11-23
+
+### Changed
+- Skill name is now `chatgpt-imagegen` (was `chatgpt-images-for-claude`). The Agent Skills spec
+  reserves the word "claude" in skill names, so the old name failed validation and would be
+  rejected on upload to Claude.ai or the Claude API. The repository name is unchanged.
+- Install now copies the folder to `~/.claude/skills/chatgpt-imagegen` to match the new name.
+  If you installed 1.0.0, rename `~/.claude/skills/chatgpt-images-for-claude` to
+  `~/.claude/skills/chatgpt-imagegen`.
+
 ## [1.0.0] - 2026-11-15
 
 First public release.

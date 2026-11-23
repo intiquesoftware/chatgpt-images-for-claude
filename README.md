@@ -45,11 +45,11 @@ The skill also reads the `imagegen` system skill that ships with Codex, at
 
 ## Install
 
-Copy this folder into your Claude Code skills directory. The folder name must stay
-`chatgpt-images-for-claude`.
+Copy this folder into your Claude Code skills directory under the skill's name,
+`chatgpt-imagegen` (the installed folder name must match the `name` in `SKILL.md`).
 
 ```bash
-cp -R chatgpt-images-for-claude ~/.claude/skills/
+cp -R chatgpt-images-for-claude ~/.claude/skills/chatgpt-imagegen
 ```
 
 For a single project, copy it to `<project>/.claude/skills/` instead.
