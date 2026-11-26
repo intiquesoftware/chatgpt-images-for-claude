@@ -16,7 +16,7 @@ license: MIT
 user-invocable: true
 argument-hint: "<what to make> [output folder] [size/preset] [format] [padding] [variants]"
 metadata:
-  version: "1.1.3"
+  version: "1.2.0"
   category: images
 ---
 

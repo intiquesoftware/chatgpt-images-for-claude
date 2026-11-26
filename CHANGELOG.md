@@ -3,7 +3,7 @@
 All notable changes to this skill are listed here. Versions follow [semver](https://semver.org/):
 patch = fixes, minor = new presets or flags, major = a change to the manifest format.
 
-## [Unreleased]
+## [1.2.0] - 2026-11-25
 
 ### Changed
 - Batches pause on the ChatGPT limit instead of stopping. When `image_gen` is unavailable,
