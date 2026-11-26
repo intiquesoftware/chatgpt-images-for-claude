@@ -47,7 +47,8 @@ if "$PY" "$S/finish_image.py" "$T/raw.png" --size nonsense --out "$T/f/x.png" >/
 
 # --- 3. stub Codex CLI -----------------------------------------------------------------------
 # Mimics `codex exec -C DIR -o LAST ... -`: reads the instructions on stdin and writes a PNG with
-# the requested name into DIR. STUB_MODE=unavailable replies IMAGEGEN_UNAVAILABLE instead.
+# the requested name into DIR. STUB_MODE=unavailable replies IMAGEGEN_UNAVAILABLE instead; STUB_MODE=wrongcopy
+# leaves this run's own image under $CODEX_HOME/generated_images/<thread>/ and copies a different one.
 mkdir -p "$T/bin"
 cat > "$T/bin/codex" <<EOF
 #!/usr/bin/env bash
@@ -57,6 +58,12 @@ while [[ \$# -gt 0 ]]; do
 done
 IN="\$(cat)"
 if [[ "\${STUB_MODE:-}" == unavailable ]]; then echo IMAGEGEN_UNAVAILABLE > "\$LAST"; exit 0; fi
+if [[ "\${STUB_MODE:-}" == wrongcopy ]]; then
+  # The agent copies another job's image; this run's own image sits in generated_images/<thread>/.
+  echo '{"type":"thread.started","thread_id":"stub-thread-1"}'
+  mkdir -p "\$CODEX_HOME/generated_images/stub-thread-1"
+  "$PY" -c "from PIL import Image;Image.new('RGB',(900,900),'#c0392b').save('\$CODEX_HOME/generated_images/stub-thread-1/exec-own.png')"
+fi
 TARGET="\$(sed -n 's/.*into the current working directory as \([^ ]*\.png\)\..*/\1/p' <<<"\$IN" | head -1)"
 "$PY" -c "from PIL import Image;Image.new('RGB',(1024,1536),'#2e86de').save('\$DIR/\$TARGET')"
 echo "\$DIR/\$TARGET 1024x1536" > "\$LAST"
@@ -69,6 +76,9 @@ check "generates one image" env CODEX_BIN="$T/bin/codex" bash "$S/codex_generate
 check "  one.png written" test -f "$T/raw/one.png"
 check "never overwrites (writes one-v2.png)" env CODEX_BIN="$T/bin/codex" bash "$S/codex_generate.sh" --out-dir "$T/raw" --name one --prompt-file "$T/prompt.txt"
 check "  one-v2.png written" test -f "$T/raw/one-v2.png"
+mkdir -p "$T/codexhome"
+check "parallel-safe: copies this run's own image" env CODEX_BIN="$T/bin/codex" CODEX_HOME="$T/codexhome" STUB_MODE=wrongcopy bash "$S/codex_generate.sh" --out-dir "$T/raw" --name own --prompt-file "$T/prompt.txt"
+check "  own.png is the run's image, not the agent's copy" size_is "$T/raw/own.png" 900 900
 env CODEX_BIN="$T/nope" bash "$S/codex_generate.sh" --out-dir "$T/raw" --name x --prompt-file "$T/prompt.txt" >/dev/null 2>&1
 [[ $? -eq 3 ]] && ok "missing CODEX_BIN -> exit 3" || bad "missing CODEX_BIN -> exit 3"
 env CODEX_BIN="$T/bin/codex" bash "$S/codex_generate.sh" --out-dir "$T/raw" --name x >/dev/null 2>&1

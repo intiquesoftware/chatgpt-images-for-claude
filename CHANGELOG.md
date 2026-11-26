@@ -3,6 +3,19 @@
 All notable changes to this skill are listed here. Versions follow [semver](https://semver.org/):
 patch = fixes, minor = new presets or flags, major = a change to the manifest format.
 
+## [1.1.3] - 2026-11-25
+
+### Fixed
+- Parallel batches could save the wrong image. The Codex agent copied the newest image in
+  `generated_images/`, so with 2 jobs at once one job could get the other's picture (seen in a
+  5-image test: the robot job saved the poster). `codex_generate.sh` now copies the image from
+  the run's own folder, `generated_images/<thread_id>/`. New smoke test covers it.
+
+### Added
+- SKILL.md: never `edit` a ChatGPT-generated image; regenerate fresh from the prompt and the
+  real reference photos instead (quality and faces degrade with each edit pass).
+- SKILL.md: documents the 5-image limit per job and that the aspect ratio is not always honored.
+
 ## [1.1.2] - 2026-11-25
 
 ### Fixed

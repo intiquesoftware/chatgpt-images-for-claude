@@ -16,7 +16,7 @@ license: MIT
 user-invocable: true
 argument-hint: "<what to make> [output folder] [size/preset] [format] [padding] [variants]"
 metadata:
-  version: "1.1.2"
+  version: "1.1.3"
   category: images
 ---
 
@@ -108,6 +108,12 @@ report). If the host can't ask, stay in the chat.
 Any image file can be sent with a prompt, in one of two roles: **reference** (likeness, logo,
 style; several allowed, `refs` in the manifest) or **edit target** (change only what's asked,
 keep the rest; `edit`).
+
+**Never `edit` an image ChatGPT generated.** Each rework of a generated image loses quality
+and drifts faces (hair, skin and fine detail get worse every round; identity drifts further
+with each pass). For a change to a generated image, run a new fresh job: the same prompt with
+the change written in, plus the original real reference photos. `edit` is only for real photos
+(a client's own photo, a product shot).
 
 **Use only images the user names, or that the prompt doc they point to names.** Never search
 folders and pick images yourself. If a prompt says "attached", "reference photo", "exact
@@ -252,6 +258,11 @@ review). Anything that calls Codex goes through the review.
 ## Known limits
 
 - One image per `image_gen` call; variants are separate calls.
+- **Max 5 images per job** (refs + edit). `image_gen` rejects a 6th
+  (`num_last_images_to_include must be between 1 and 5`), and a run can also finish while
+  silently using only the last 5. Pick the best 5.
+- The aspect ratio in the prompt is usually honored but not always (a 9:16 request once came
+  back 4:5). Check the raw size in step 9; `finish_image.py --fit cover` or a re-run fixes it.
 - Native output is about 1.5 MP. Anything larger is an upscale.
 - The image model ignores exact inch/pixel margin requests; margins are the finisher's job.
 - Editing (`edit`) works on the attached image; masks and API-only controls need the paid

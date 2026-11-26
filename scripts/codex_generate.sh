@@ -100,6 +100,18 @@ RC=$?
 set -e
 echo "elapsed=$(( $(date +%s) - START ))s exit=$RC codex=$CODEX log=$LOG" >&2
 
+# Take the image from this run's own folder (generated_images/<thread_id>/), not the agent's
+# copy: with parallel jobs the agent can pick another job's newer image (seen 2026-11-25).
+THREAD="$(grep -m1 -o '"thread_id":"[^"]*"' "$LOG/run.jsonl" 2>/dev/null | cut -d'"' -f4 || true)"
+GEN_DIR="${CODEX_HOME:-$HOME/.codex}/generated_images/$THREAD"
+if [[ -n "$THREAD" && -d "$GEN_DIR" ]]; then
+  OWN="$(ls -t "$GEN_DIR"/*.png 2>/dev/null | head -1 || true)"
+  if [[ -n "$OWN" ]]; then
+    cp -f "$OWN" "$OUT_DIR/$TARGET"
+    echo "source=$OWN" >&2
+  fi
+fi
+
 if grep -q IMAGEGEN_UNAVAILABLE "$LOG/last-message.txt" 2>/dev/null; then
   echo "Built-in image_gen unavailable. Do not fall back to the paid API without the user's OK." >&2; exit 4
 fi
