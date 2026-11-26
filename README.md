@@ -127,8 +127,10 @@ manifest format is in the docstring of `scripts/batch_generate.py`.
 - Masks and other API-only controls are not available through `image_gen`. The paid API
   fallback in the Codex imagegen skill needs `OPENAI_API_KEY`; the skill never switches to it
   without asking you.
-- ChatGPT plan image limits are not published. When a limit or outage stops a batch, re-run the
-  same command later and it picks up where it left off.
+- ChatGPT plan image limits are not published. When ChatGPT says image generation is
+  unavailable (usually the plan limit), a batch pauses on its own: it lets the running images
+  finish, waits 5 minutes, and resumes (then 10 and 20 minutes if it is still refused). After
+  3 pauses it stops; re-run the same command later and it picks up where it left off.
 
 ## Tested on
 

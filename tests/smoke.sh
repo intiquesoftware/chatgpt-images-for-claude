@@ -58,6 +58,9 @@ while [[ \$# -gt 0 ]]; do
 done
 IN="\$(cat)"
 if [[ "\${STUB_MODE:-}" == unavailable ]]; then echo IMAGEGEN_UNAVAILABLE > "\$LAST"; exit 0; fi
+if [[ "\${STUB_MODE:-}" == limitonce && ! -e "\$STUB_FLAG" ]]; then
+  touch "\$STUB_FLAG"; echo IMAGEGEN_UNAVAILABLE > "\$LAST"; exit 0
+fi
 if [[ "\${STUB_MODE:-}" == wrongcopy ]]; then
   # The agent copies another job's image; this run's own image sits in generated_images/<thread>/.
   echo '{"type":"thread.started","thread_id":"stub-thread-1"}'
@@ -111,6 +114,12 @@ check "  job-b story finished 1080x1920" size_is "$T/bfin/job-b-ig-story.jpg" 10
 check "  status file says done" "$PY" -c "import json,sys;s=json.load(open(sys.argv[1]));sys.exit(0 if all(r['status']=='done' for r in s.values()) and len(s)==2 else str(s))" "$T/braw/batch.status.json"
 out="$(env CODEX_BIN="$T/bin/codex" "$PY" "$S/batch_generate.py" "$T/batch.json" --raw-dir "$T/braw" --final-dir "$T/bfin" 2>&1)"
 grep -q "2 already done, 0 to run" <<<"$out" && ok "re-run resumes (skips done jobs)" || bad "re-run resumes (skips done jobs)" "$out"
+cp "$T/batch.json" "$T/limit.json"
+out="$(env CODEX_BIN="$T/bin/codex" STUB_MODE=limitonce STUB_FLAG="$T/limit.flag" "$PY" "$S/batch_generate.py" "$T/limit.json" --raw-dir "$T/lraw" --final-dir "$T/lfin" --concurrency 1 --pause-minutes 0.01 2>&1)"
+grep -q "PAUSED" <<<"$out" && grep -q "done 2/2" <<<"$out" && ok "limit hit: pauses, then resumes and finishes" || bad "limit hit: pauses, then resumes and finishes" "$out"
+cp "$T/batch.json" "$T/limit0.json"
+out="$(env CODEX_BIN="$T/bin/codex" STUB_MODE=unavailable "$PY" "$S/batch_generate.py" "$T/limit0.json" --raw-dir "$T/l0raw" --final-dir "$T/l0fin" --max-pauses 0 2>&1)"
+grep -q "Stopping; re-run" <<<"$out" && grep -q "done 0/2" <<<"$out" && ok "limit with --max-pauses 0: stops, resumable" || bad "limit with --max-pauses 0: stops, resumable" "$out"
 printf '{"jobs":[{"name":"dup","prompt":"x"},{"name":"dup","prompt":"y"},{"name":"noprompt"}]}' > "$T/badman.json"
 if "$PY" "$S/batch_generate.py" "$T/badman.json" --raw-dir "$T/x" --final-dir "$T/y" --dry-run >/dev/null 2>&1; then
   bad "bad manifest is rejected"; else ok "bad manifest is rejected"; fi

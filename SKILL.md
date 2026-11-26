@@ -221,9 +221,16 @@ with it also counts).
    finished files, raw original, Codex log, plus the batch folders, manifest and page at the
    bottom) has a Copy path button; full paths are hidden on load behind a "Full paths" switch.
    There are no open-in-Finder links: browsers can only open file:// links in the browser.
-   - Exit 4 (`IMAGEGEN_UNAVAILABLE`: plan limit, outage, or the built-in tool is missing) halts
-     the batch. The paid API fallback (`scripts/image_gen.py` in the Codex imagegen skill) needs
-     `OPENAI_API_KEY` and costs money. **Ask the user; never switch on your own.**
+   - **ChatGPT limit (`IMAGEGEN_UNAVAILABLE`, usually the plan limit):** the batch pauses on
+     its own. It starts no new jobs, lets the ones already running finish, waits 5 min, then
+     resumes with the refused and unstarted jobs (later pauses wait 10, then 20 min). When you
+     see `PAUSED` in the output, tell the user in one line: ChatGPT says image generation is
+     unavailable, most likely the plan limit, so the batch is paused and resumes at the time
+     shown. After 3 pauses it stops; re-running the same command resumes. Change the timing with
+     `--pause-minutes` and `--max-pauses` (`--max-pauses 0` stops at the first limit). A single
+     image run with `codex_generate.sh` still exits 4 right away. The paid API fallback (`scripts/image_gen.py` in the Codex imagegen skill) needs
+     `OPENAI_API_KEY` and costs money. **Ask the user; never switch on your own.** A batch that
+     may pause should run in the background, since pauses can outlast a foreground timeout.
    - Exit 3: no Codex CLI found. Tell the user (see Requirements).
 
 7. **Look at every raw image** with Read.

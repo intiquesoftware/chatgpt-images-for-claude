@@ -142,6 +142,11 @@ def main():
     ap.add_argument("--concurrency", type=int, default=2, help="parallel generations (default 2, max 4)")
     ap.add_argument("--dry-run", action="store_true", help="validate and list jobs, generate nothing")
     ap.add_argument("--redo", nargs="*", default=[], help="job names to run again even if done")
+    ap.add_argument("--pause-minutes", type=float, default=5,
+                    help="when image_gen is unavailable (plan limit), wait this long before resuming; "
+                         "each later pause doubles (default 5)")
+    ap.add_argument("--max-pauses", type=int, default=3,
+                    help="pauses before giving up (default 3: 5, 10, 20 min); 0 = stop at the first limit")
     a = ap.parse_args()
 
     man = json.loads(Path(a.manifest).read_text())
@@ -180,18 +185,43 @@ def main():
     if preview_args:
         print(f"live results: {make_preview.build(*preview_args)}")
 
-    with ThreadPoolExecutor(conc) as pool:
-        futs = [pool.submit(run_job, j, raw_dir, final_dir, status, status_path) for j in todo]
-        for i, fut in enumerate(as_completed(futs), 1):
-            name, rec = fut.result()
-            if rec is None:
-                continue
-            print(f"[{i}/{len(todo)}] {name}: {rec['status']} ({rec['seconds']}s)"
-                  + (f"  {rec.get('error', '')[:160]}" if rec["status"] != "done" else ""), flush=True)
-            if rec.get("exit") == 4:
-                print("image_gen unavailable (plan limit or outage). Stopping; re-run later to resume.")
-                pool.shutdown(cancel_futures=True)
-                break
+    # Rounds: run the remaining jobs; if image_gen says it is unavailable (usually the ChatGPT plan
+    # limit), start no new jobs, let the ones already running finish, pause, then resume with the
+    # jobs that were refused or never started. Give up after --max-pauses.
+    remaining, pauses, n = list(todo), 0, 0
+    while remaining:
+        stop.clear()
+        hit = False
+        with ThreadPoolExecutor(conc) as pool:
+            futs = [pool.submit(run_job, j, raw_dir, final_dir, status, status_path) for j in remaining]
+            for fut in as_completed(futs):
+                name, rec = fut.result()
+                if rec is None:
+                    continue
+                if rec.get("exit") == 4:
+                    hit = True
+                    with lock:
+                        status[name] = {"status": "queued", "note": "image_gen unavailable, will retry"}
+                        save(status, status_path)
+                    print(f"  {name}: image_gen unavailable; not starting new jobs, letting running ones finish",
+                          flush=True)
+                    continue
+                n += 1
+                print(f"[{n}/{len(todo)}] {name}: {rec['status']} ({rec['seconds']}s)"
+                      + (f"  {rec.get('error', '')[:160]}" if rec["status"] != "done" else ""), flush=True)
+        remaining = [j for j in remaining if status.get(j["name"], {}).get("status") == "queued"]
+        if not hit or not remaining:
+            break
+        if pauses >= a.max_pauses:
+            print(f"image_gen still unavailable after {pauses} pause(s) (plan limit or outage). "
+                  "Stopping; re-run the same command later to resume.", flush=True)
+            break
+        wait = a.pause_minutes * 60 * (2 ** pauses)
+        pauses += 1
+        resume = time.strftime("%H:%M", time.localtime(time.time() + wait))
+        print(f"PAUSED: image_gen unavailable, most likely the ChatGPT plan limit. {len(remaining)} job(s) left. "
+              f"Pause {pauses}/{a.max_pauses}: waiting {wait / 60:.0f} min, resuming about {resume}.", flush=True)
+        time.sleep(wait)
 
     with lock:  # jobs skipped after a stop go back to not-started
         for n in [n for n, r in status.items() if r["status"] == "queued"]:
