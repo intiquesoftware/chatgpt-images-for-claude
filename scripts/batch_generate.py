@@ -142,11 +142,11 @@ def main():
     ap.add_argument("--concurrency", type=int, default=2, help="parallel generations (default 2, max 4)")
     ap.add_argument("--dry-run", action="store_true", help="validate and list jobs, generate nothing")
     ap.add_argument("--redo", nargs="*", default=[], help="job names to run again even if done")
-    ap.add_argument("--pause-minutes", type=float, default=5,
-                    help="when image_gen is unavailable (plan limit), wait this long before resuming; "
-                         "each later pause doubles (default 5)")
+    ap.add_argument("--pause-minutes", type=float, default=2,
+                    help="when image_gen is unavailable (plan limit), wait this long before retrying; "
+                         "each later pause doubles (default 2)")
     ap.add_argument("--max-pauses", type=int, default=3,
-                    help="pauses before giving up (default 3: 5, 10, 20 min); 0 = stop at the first limit")
+                    help="pauses before giving up (default 3: 2, 4, 8 min); 0 = stop at the first limit")
     a = ap.parse_args()
 
     man = json.loads(Path(a.manifest).read_text())
@@ -212,16 +212,20 @@ def main():
         remaining = [j for j in remaining if status.get(j["name"], {}).get("status") == "queued"]
         if not hit or not remaining:
             break
+        done_n = sum(1 for r in status.values() if r.get("status") == "done")
         if pauses >= a.max_pauses:
-            print(f"image_gen still unavailable after {pauses} pause(s) (plan limit or outage). "
-                  "Stopping; re-run the same command later to resume.", flush=True)
+            print(f"STOPPED: ChatGPT still says image generation is unavailable after {pauses} pause(s), "
+                  f"most likely the plan's image limit. {done_n} of {len(jobs)} done and saved, "
+                  f"{len(remaining)} left. Re-run the same command later to finish them.", flush=True)
             break
         wait = a.pause_minutes * 60 * (2 ** pauses)
         pauses += 1
         resume = time.strftime("%H:%M", time.localtime(time.time() + wait))
-        print(f"PAUSED: image_gen unavailable, most likely the ChatGPT plan limit. {len(remaining)} job(s) left. "
-              f"Pause {pauses}/{a.max_pauses}: waiting {wait / 60:.0f} min, resuming about {resume}.", flush=True)
+        print(f"PAUSED: ChatGPT says image generation is unavailable, most likely the plan's image limit. "
+              f"{done_n} of {len(jobs)} done and saved, {len(remaining)} left. "
+              f"Pause {pauses} of {a.max_pauses}: retrying at {resume} ({wait / 60:g} min).", flush=True)
         time.sleep(wait)
+        print(f"RESUMED: retrying {len(remaining)} image(s).", flush=True)
 
     with lock:  # jobs skipped after a stop go back to not-started
         for n in [n for n, r in status.items() if r["status"] == "queued"]:

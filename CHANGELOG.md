@@ -7,9 +7,11 @@ patch = fixes, minor = new presets or flags, major = a change to the manifest fo
 
 ### Changed
 - Batches pause on the ChatGPT limit instead of stopping. When `image_gen` is unavailable,
-  `batch_generate.py` starts no new jobs, lets running ones finish, waits (5, 10, then 20 min)
-  and resumes with the refused and unstarted jobs. New flags `--pause-minutes` and
-  `--max-pauses` (`0` keeps the old stop-at-first-limit behavior). Two new smoke tests.
+  `batch_generate.py` starts no new jobs, lets running ones finish, waits (2, 4, then 8 min)
+  and retries the refused and unstarted jobs. It prints plain `PAUSED:`, `RESUMED:` and
+  `STOPPED:` lines (images done, images left, retry time), and SKILL.md has Claude watch them
+  and tell the user in the chat as they happen. New flags `--pause-minutes` and `--max-pauses`
+  (`0` keeps the old stop-at-first-limit behavior). Two new smoke tests.
 
 ## [1.1.3] - 2026-11-25
 

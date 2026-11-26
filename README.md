@@ -129,8 +129,10 @@ manifest format is in the docstring of `scripts/batch_generate.py`.
   without asking you.
 - ChatGPT plan image limits are not published. When ChatGPT says image generation is
   unavailable (usually the plan limit), a batch pauses on its own: it lets the running images
-  finish, waits 5 minutes, and resumes (then 10 and 20 minutes if it is still refused). After
-  3 pauses it stops; re-run the same command later and it picks up where it left off.
+  finish, waits 2 minutes, and retries (then 4 and 8 minutes if it is still refused). Claude
+  tells you in the chat when it pauses, why, how many images are saved, and when it will
+  retry. After 3 pauses it stops; re-run the same command later and it picks up where it left
+  off. For reference, the author has run about 80 images in a day without hitting the limit.
 
 ## Tested on
 

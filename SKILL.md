@@ -221,14 +221,22 @@ with it also counts).
    finished files, raw original, Codex log, plus the batch folders, manifest and page at the
    bottom) has a Copy path button; full paths are hidden on load behind a "Full paths" switch.
    There are no open-in-Finder links: browsers can only open file:// links in the browser.
-   - **ChatGPT limit (`IMAGEGEN_UNAVAILABLE`, usually the plan limit):** the batch pauses on
-     its own. It starts no new jobs, lets the ones already running finish, waits 5 min, then
-     resumes with the refused and unstarted jobs (later pauses wait 10, then 20 min). When you
-     see `PAUSED` in the output, tell the user in one line: ChatGPT says image generation is
-     unavailable, most likely the plan limit, so the batch is paused and resumes at the time
-     shown. After 3 pauses it stops; re-running the same command resumes. Change the timing with
-     `--pause-minutes` and `--max-pauses` (`--max-pauses 0` stops at the first limit). A single
-     image run with `codex_generate.sh` still exits 4 right away. The paid API fallback (`scripts/image_gen.py` in the Codex imagegen skill) needs
+   - **ChatGPT limit (`IMAGEGEN_UNAVAILABLE`, usually the plan's image limit):** the batch
+     pauses on its own. It starts no new jobs, lets the ones already running finish, waits 2
+     min, then retries the refused and unstarted jobs (later pauses wait 4, then 8 min). After 3
+     pauses it stops; re-running the same command resumes. `--pause-minutes` and `--max-pauses`
+     change this (`--max-pauses 0` stops at the first limit). A single image run with
+     `codex_generate.sh` still exits 4 right away.
+   - **Keep the user told, live.** A background batch only notifies you when it ends, so a
+     pause would otherwise be silent. Whenever a batch runs in the background, also watch its
+     output for lines starting `[`, `PAUSED:`, `RESUMED:` and `STOPPED:` (in Claude Code, the
+     Monitor tool with a filter such as `grep -E --line-buffered '^(\[|PAUSED|RESUMED|STOPPED)'`)
+     and relay each to the user in one plain line as it arrives, for example: "ChatGPT says image
+     generation is unavailable, most likely your plan's image limit. 12 of 20 are done and saved;
+     I'll retry the other 8 at 11:15." Then "Resumed, retrying 8." Then each image as it lands
+     (chat mode: send it). On `STOPPED:`, say what is saved, what is left, and that re-running
+     later finishes it. If the host has no way to watch output, run with `--max-pauses 0` so the
+     batch ends at the limit and you can tell the user right away. The paid API fallback (`scripts/image_gen.py` in the Codex imagegen skill) needs
      `OPENAI_API_KEY` and costs money. **Ask the user; never switch on your own.** A batch that
      may pause should run in the background, since pauses can outlast a foreground timeout.
    - Exit 3: no Codex CLI found. Tell the user (see Requirements).

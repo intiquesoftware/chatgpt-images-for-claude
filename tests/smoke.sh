@@ -116,10 +116,10 @@ out="$(env CODEX_BIN="$T/bin/codex" "$PY" "$S/batch_generate.py" "$T/batch.json"
 grep -q "2 already done, 0 to run" <<<"$out" && ok "re-run resumes (skips done jobs)" || bad "re-run resumes (skips done jobs)" "$out"
 cp "$T/batch.json" "$T/limit.json"
 out="$(env CODEX_BIN="$T/bin/codex" STUB_MODE=limitonce STUB_FLAG="$T/limit.flag" "$PY" "$S/batch_generate.py" "$T/limit.json" --raw-dir "$T/lraw" --final-dir "$T/lfin" --concurrency 1 --pause-minutes 0.01 2>&1)"
-grep -q "PAUSED" <<<"$out" && grep -q "done 2/2" <<<"$out" && ok "limit hit: pauses, then resumes and finishes" || bad "limit hit: pauses, then resumes and finishes" "$out"
+grep -q "PAUSED: ChatGPT" <<<"$out" && grep -q "RESUMED" <<<"$out" && grep -q "done 2/2" <<<"$out" && ok "limit hit: pauses, then resumes and finishes" || bad "limit hit: pauses, then resumes and finishes" "$out"
 cp "$T/batch.json" "$T/limit0.json"
 out="$(env CODEX_BIN="$T/bin/codex" STUB_MODE=unavailable "$PY" "$S/batch_generate.py" "$T/limit0.json" --raw-dir "$T/l0raw" --final-dir "$T/l0fin" --max-pauses 0 2>&1)"
-grep -q "Stopping; re-run" <<<"$out" && grep -q "done 0/2" <<<"$out" && ok "limit with --max-pauses 0: stops, resumable" || bad "limit with --max-pauses 0: stops, resumable" "$out"
+grep -q "STOPPED: ChatGPT" <<<"$out" && grep -q "done 0/2" <<<"$out" && ok "limit with --max-pauses 0: stops, resumable" || bad "limit with --max-pauses 0: stops, resumable" "$out"
 printf '{"jobs":[{"name":"dup","prompt":"x"},{"name":"dup","prompt":"y"},{"name":"noprompt"}]}' > "$T/badman.json"
 if "$PY" "$S/batch_generate.py" "$T/badman.json" --raw-dir "$T/x" --final-dir "$T/y" --dry-run >/dev/null 2>&1; then
   bad "bad manifest is rejected"; else ok "bad manifest is rejected"; fi
