@@ -4,8 +4,9 @@ description: >
   Generate or edit images with ChatGPT's image model straight from Claude Code, through the Codex
   CLI's built-in image_gen tool (ChatGPT sign-in, no OpenAI API key), then finish them to spec:
   exact pixel or print size, resolution/DPI, padding or margins, fit (contain/cover), background,
-  upscale, and output format (PNG, JPG, WebP, TIFF, PDF). Every run is approved on a read-only
-  HTML preview first. Use when: "generate an image", "make this in ChatGPT", "run this prompt
+  upscale, and output format (PNG, JPG, WebP, TIFF, PDF). Every run is approved in the chat
+  first: prompt, reference images and results show right in the conversation, no browser
+  needed (an HTML preview page is optional for big batches). Use when: "generate an image", "make this in ChatGPT", "run this prompt
   through Codex", "create a poster/flyer/social graphic/ad image", "make a 1080x1350 version",
   "give me a print-ready PDF of this", "edit this photo with ChatGPT", "make 3 variations",
   "batch 12 images", "make a whole set of images from these prompts", or when prompts already
@@ -15,15 +16,16 @@ license: MIT
 user-invocable: true
 argument-hint: "<what to make> [output folder] [size/preset] [format] [padding] [variants]"
 metadata:
-  version: "1.0.1"
+  version: "1.1.0"
   category: images
 ---
 
 # ChatGPT Images for Claude
 
 Claude writes the prompt, Codex makes the pixels, a script makes it to spec, Claude checks it,
-and the file lands in the folder the user chose. The user approves every prompt on an HTML
-preview before anything is generated and asks for changes in chat. Four scripts do the
+and the file lands in the folder the user chose. The whole loop happens in the chat: the user
+sees the prompt and the reference images there, approves or tweaks in plain words, and sees the
+finished image there too, the way the ChatGPT app shows it. Four scripts do the
 mechanical work. They live in `scripts/` next to this file; below, `$SKILL_DIR` means the folder
 that contains this SKILL.md.
 
@@ -31,7 +33,7 @@ that contains this SKILL.md.
 |---|---|
 | `scripts/codex_generate.sh` | One `codex exec` call, built-in `image_gen` tool, raw PNG into a folder. Roughly 1 to 2.5 min per image. |
 | `scripts/finish_image.py` | Size, DPI, padding, fit, background, upscale, format. Deterministic, never overwrites. |
-| `scripts/make_preview.py` | Read-only HTML approval page from the manifest; during a run it becomes the live results page. Opens from file://, no server. |
+| `scripts/make_preview.py` | Optional read-only HTML page for big batches (see "Review mode"); during a run it becomes the live results page. Opens from file://, no server. |
 | `scripts/batch_generate.py` | Runs the approved manifest (1 or many jobs): generate + finish, 2 at a time, resumable. |
 
 **Why the split:** the built-in `image_gen` tool picks its own pixel size (about 1.5 MP, e.g.
@@ -71,7 +73,31 @@ Take them from the request. Ask only for what blocks the job; default the rest a
 | Reference / edit images | None. Any image file works (see "Source images"). |
 
 **Batch size:** any number of images works. Past 4, call out the count and estimated time in the
-preview handoff; ChatGPT plan image limits are not published and vary.
+review handoff; ChatGPT plan image limits are not published and vary.
+
+## Review mode
+
+**Chat (default).** Everything the user needs to see goes into the conversation:
+
+- **Images** (reference images before a run, finished images after): send the file itself into
+  the chat with the host's send-file tool, so it renders inline or in the side panel. In the
+  Claude desktop app that is `SendUserFile` with `display: "render"`. One card per image; for a
+  run of several references, one card each is fine up to about 4. If the host has no such tool,
+  give the full path instead.
+- **The prompt**: a short labeled table (Reference, Format, Scene, Subject, Wardrobe or
+  Product, Text verbatim, Palette, Avoid), not one long paragraph. The full prompt still goes in
+  the manifest. Below the table, list the defaults you picked (output folder, size, anything
+  left out such as a logo the user didn't name) so they can change them in one reply.
+- **Tweaks**: after a change, re-post only the rows that changed.
+- **Next step links**: when the image is headed somewhere else (a video model, a print shop, a
+  social scheduler), give that prompt or text in a fenced code block so it gets a Copy button,
+  put a plain markdown link to the tool next to it (e.g. `[Open Google Flow](https://flow.google.com/)`
+  for an image-to-video start frame), and reveal the file so it can be dragged in
+  (`open -R "<file>"` on macOS, or the host's reveal-in-Finder tool).
+
+**HTML page (optional).** Use `make_preview.py` only when the user asks for a page, or for a
+batch of more than 4 images where side-by-side comparison beats one card per image. Say which
+mode you are using in the handoff.
 
 ## Source images
 
@@ -81,15 +107,15 @@ keep the rest; `edit`).
 
 **Use only images the user names, or that the prompt doc they point to names.** Never search
 folders and pick images yourself. If a prompt says "attached", "reference photo", "exact
-likeness", "reproduce the logo" or similar but no file is named, ask which file before building
-the preview. If a named file doesn't exist at that path, say so and ask; don't substitute a
-look-alike. The preview shows a thumbnail of every image being sent, so the user confirms them
-along with the prompt. Use absolute paths for `refs` and `edit`.
+likeness", "reproduce the logo" or similar but no file is named, ask which file before the
+review. If a named file doesn't exist at that path, say so and ask; don't substitute a
+look-alike. The review shows every image being sent, so the user confirms them along with the
+prompt. Use absolute paths for `refs` and `edit`.
 
 ## Where files go
 
 **There is no default output folder. The user picks the base folder.** If they haven't named
-one, and the prompt doc they point to doesn't say, **ask before writing the preview** (use
+one, and the prompt doc they point to doesn't say, **ask before the review** (use
 AskUserQuestion when available). Suggest 2-3 likely folders from the current project (an
 existing exports, assets, images or print folder) and let them choose or type another. Never
 pick one silently.
@@ -101,7 +127,7 @@ Inside the base folder the layout is fixed:
   <name>-<preset>.jpg ...          finished files
   codex-raw/
     <set>.json                     manifest (what gets generated)
-    <set>.preview.html             the approval page
+    <set>.preview.html             the approval page (HTML mode only)
     <set>.status.json              batch progress
     <name>.png                     raw original from ChatGPT, kept
     <name>.prompt.txt              exact prompt sent
@@ -117,8 +143,9 @@ leave it alone.
 
 ## Workflow
 
-Every run, even a single image, goes manifest → preview → approval → generate. Nothing is sent
-to Codex until the user says go.
+Every run, even a single image, goes manifest → review → approval → generate. Nothing is sent
+to Codex until the user says go (a reply that asks for a change and clearly says to go ahead
+with it also counts).
 
 1. **Load context.** Settle the base folder (ask, see above). If the project has brand docs
    (brand guidelines, style guide, design tokens), read colours, fonts and voice before writing
@@ -147,19 +174,23 @@ to Codex until the user says go.
    several files from one generation; the preset name becomes the file suffix (or set
    `suffix`). Variants of one idea are separate jobs (`-a`, `-b` names).
 
-4. **Build the preview and hand it over.**
+4. **Hand over the review.** Chat mode (default): send each reference image to the chat, post
+   the prompt table and the defaults you picked, give the image count and a time estimate
+   (about 1.5 min per image, halved at concurrency 2), and stop.
+
+   HTML mode (big batches or on request): build the page and open it.
    ```bash
    python3 "$SKILL_DIR/scripts/make_preview.py" "<manifest>" --raw-dir "<base>/codex-raw" --final-dir "<base>" --title "<Project name>"
    ```
    Then open the printed `.preview.html` in the user's browser (`open` on macOS, `xdg-open` on
    Linux). The page is read-only: every prompt, the outputs, reference thumbnails and both
-   folders. Give the user its full path, the image count and a time estimate (about 1.5 min per
-   image, halved at concurrency 2), and stop. More than 4 images: say the count and time
-   explicitly; approving the preview is the opt-in. Do not make the preview editable.
+   folders. Give the user its full path, the image count and the time estimate, and stop.
+   More than 4 images: say the count and time explicitly; approving is the opt-in. Do not make
+   the preview editable.
 
 5. **Wait for "go" or change requests.** Changes come in chat ("make the text white"): update
-   the manifest, rebuild the preview (same command, it overwrites the page), reopen it, and wait
-   again. Only "go" (or a clear equivalent) starts generation.
+   the manifest, then re-post only the changed rows (chat mode) or rebuild and reopen the page
+   (HTML mode, same command, it overwrites), and wait again. Only "go" (or a clear equivalent) starts generation.
 
 6. **Generate and finish.**
    ```bash
@@ -170,7 +201,7 @@ to Codex until the user says go.
    `<manifest-stem>.status.json`; re-running the same command resumes and skips finished jobs.
    `--dry-run` validates the manifest and lists the jobs without generating anything.
 
-   **Live results:** the batch rebuilds the preview page every time a job starts or finishes.
+   **Live results (HTML mode only):** the batch rebuilds the preview page every time a job starts or finishes.
    Each card then shows a status badge, the generated original, the finished files (images as
    thumbnails, PDF/TIFF as links) and any warning, and the page reloads itself every 15 s while
    jobs are queued or running. The copy the user approved has no auto-reload, so right after
@@ -203,13 +234,16 @@ to Codex until the user says go.
      `finish_image.py` on the upscaled file.
    - Print output under about 150 effective ppi: mention it.
 
-10. **Report**: full paths of finished files, size/format, text check result, any warning
+10. **Show and report.** Send each finished image to the chat (chat mode), then report: full
+    paths of finished files, size/format, text check result, any warning
     (upscale, ppi, retries, small flaws). For several images, a table: name, text check, files,
-    notes. Offer the next variant or format in one line.
+    notes. Offer the next variant or format in one line. If the image is a start frame for
+    something else (a video, a print order), offer to write that prompt with its link (see
+    "Review mode").
 
 `scripts/codex_generate.sh` and `scripts/finish_image.py` can still be called directly for a
 quick re-finish of an existing raw image (a new size or format needs no new generation, so no
-preview). Anything that calls Codex goes through the preview.
+review). Anything that calls Codex goes through the review.
 
 ## Known limits
 

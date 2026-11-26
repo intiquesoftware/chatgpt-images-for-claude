@@ -12,9 +12,11 @@ Claude writes the prompt. The Codex CLI, signed in with your ChatGPT account, ru
 Pillow script then finishes the file to spec: exact pixel or print size, DPI, padding, fit,
 background, upscale, and format (PNG, JPG, WebP, TIFF, PDF).
 
-Nothing is generated until you approve it. Every run, even a single image, first becomes a JSON
-manifest and a read-only HTML preview of every prompt, reference image and output. You reply
-"go", or ask for changes in chat.
+Nothing is generated until you approve it, and you never have to leave the chat. Like the
+ChatGPT app, the reference images, the prompt and the finished image all show up right in the
+conversation (in the Claude desktop app they open in the side panel). You reply "go", or type a
+change in plain words. For big batches you can still ask for a read-only HTML page that shows
+every prompt and result side by side.
 
 ## Why a finishing step
 
@@ -73,20 +75,24 @@ In Claude Code:
 Claude will:
 
 1. Ask for an output folder if you didn't give one. There is no default.
-2. Write the manifest and open the HTML preview in your browser.
-3. Wait. Ask for changes in chat, or say **go**.
-4. Generate (about 1 to 2.5 minutes per image), check the text, finish the files, and report
-   the paths. The preview page turns into a live results page: each image and its finished
-   files appear on it as they are done, with type, size and file size, so there is no need
-   to dig through folders. Every file and folder has a Copy path button, and full paths sit behind a
-   "Full paths" switch (off on every load).
+2. Show you the reference images and the prompt as a short table in the chat.
+3. Wait. Type a change ("make the text white") and it re-posts only what changed, or say **go**.
+4. Generate (about 1 to 2.5 minutes per image), check the text letter by letter, finish the
+   files, show the finished image in the chat and report the paths.
+5. If the image is the start frame for something else, such as an image-to-video model, write
+   that prompt in a copyable block with a link to the tool, and reveal the file in Finder so you
+   can drag it in.
+
+Prefer a page? Ask for the HTML preview, or run a batch of more than 4 images: the read-only
+page shows every prompt and reference, then turns into a live results page as images finish,
+with a Copy path button on every file.
 
 Output layout:
 
 ```
 <your folder>/
   spring-bake-sale.pdf        finished files
-  codex-raw/                  manifest, preview, status, raw PNGs, prompts, Codex logs
+  codex-raw/                  manifest, status, raw PNGs, prompts, Codex logs (and the preview page, if used)
 ```
 
 Files are never overwritten; repeats get `-v2`, `-v3`.
@@ -99,7 +105,7 @@ They also work on their own.
 |---|---|
 | `scripts/codex_generate.sh` | One image through `codex exec` and `image_gen`. |
 | `scripts/finish_image.py` | Size, DPI, padding, fit, background, upscale, format. |
-| `scripts/make_preview.py` | Read-only HTML preview of a manifest; shows results once a batch runs. |
+| `scripts/make_preview.py` | Optional read-only HTML preview of a manifest for big batches; shows results once a batch runs. |
 | `scripts/batch_generate.py` | Runs a manifest: 2 at a time by default (max 4), resumable, `--redo NAME`, `--dry-run`. |
 
 Re-finish an existing image without generating a new one:

@@ -3,6 +3,21 @@
 All notable changes to this skill are listed here. Versions follow [semver](https://semver.org/):
 patch = fixes, minor = new presets or flags, major = a change to the manifest format.
 
+## [1.1.0] - 2026-11-25
+
+### Changed
+- Review happens in the chat by default. Reference images and finished images are sent into
+  the conversation (in the Claude desktop app they render in the side panel), the prompt is
+  shown as a short labeled table, and tweaks re-post only the rows that changed. No browser
+  page is needed for a normal run.
+- The HTML preview (`make_preview.py`) is now optional: used when you ask for it, or for
+  batches of more than 4 images. Scripts and the manifest format are unchanged.
+
+### Added
+- Next-step handoff: when an image is a start frame for another tool (for example an
+  image-to-video model), the skill writes that prompt in a copyable code block, links to the
+  tool, and reveals the file so it can be dragged in.
+
 ## [1.0.1] - 2026-11-23
 
 ### Changed
