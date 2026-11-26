@@ -6,8 +6,10 @@ entry in its `finish` list. Jobs run N at a time. Progress is saved after every 
 <raw-dir>/<batch>.status.json, so a re-run skips finished jobs (resume after a crash or a
 plan limit). Text/quality review still happens afterward: Claude reads every raw image.
 
-The manifest's .preview.html page is rebuilt whenever a job starts or finishes, so it shows
-each generated image and its finished files as they arrive (refreshing itself while jobs run).
+If the manifest's .preview.html page exists (HTML mode: the user picked it for a big batch and
+make_preview.py built it), it is rebuilt whenever a job starts or finishes, so it shows each
+generated image and its finished files as they arrive. Without that page (chat mode, the
+default) no HTML is written.
 
 Usage:
   batch_generate.py MANIFEST.json --raw-dir DIR --final-dir DIR [--concurrency 2] [--dry-run] [--redo NAME ...]
@@ -169,11 +171,14 @@ def main():
         return
 
     global preview_args
-    preview_args = (a.manifest, raw_dir, final_dir)
+    page = Path(a.manifest).with_name(Path(a.manifest).stem + ".preview.html")
+    if page.exists():  # HTML mode only; chat mode never writes a page
+        preview_args = (a.manifest, raw_dir, final_dir)
     for j in todo:
         status[j["name"]] = {"status": "queued"}
     save(status, status_path)
-    print(f"live results: {make_preview.build(*preview_args)}")
+    if preview_args:
+        print(f"live results: {make_preview.build(*preview_args)}")
 
     with ThreadPoolExecutor(conc) as pool:
         futs = [pool.submit(run_job, j, raw_dir, final_dir, status, status_path) for j in todo]

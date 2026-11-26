@@ -89,6 +89,9 @@ cat > "$T/batch.json" <<EOF
   ]
 }
 EOF
+cp "$T/batch.json" "$T/chat.json"
+check "chat-mode batch runs" env CODEX_BIN="$T/bin/codex" "$PY" "$S/batch_generate.py" "$T/chat.json" --raw-dir "$T/craw" --final-dir "$T/cfin"
+check "  chat mode writes no HTML page" bash -c '! ls "$1"/*.html "$2"/*.html >/dev/null 2>&1' _ "$T" "$T/craw"
 check "preview page builds" "$PY" "$S/make_preview.py" "$T/batch.json" --raw-dir "$T/braw" --final-dir "$T/bfin" --title "Smoke test"
 check "  preview.html written" test -s "$T/batch.preview.html"
 check "dry run lists jobs" "$PY" "$S/batch_generate.py" "$T/batch.json" --raw-dir "$T/braw" --final-dir "$T/bfin" --dry-run

@@ -3,6 +3,13 @@
 All notable changes to this skill are listed here. Versions follow [semver](https://semver.org/):
 patch = fixes, minor = new presets or flags, major = a change to the manifest format.
 
+## [1.1.2] - 2026-11-25
+
+### Fixed
+- `batch_generate.py` no longer writes an HTML page in chat mode. It refreshes the live results
+  page only when that page already exists (the user picked HTML for a big batch). Before, every
+  batch wrote a `.preview.html` file to disk even when nobody opened it. New smoke test covers it.
+
 ## [1.1.1] - 2026-11-25
 
 ### Changed
