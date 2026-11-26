@@ -6,7 +6,7 @@ description: >
   exact pixel or print size, resolution/DPI, padding or margins, fit (contain/cover), background,
   upscale, and output format (PNG, JPG, WebP, TIFF, PDF). Every run is approved in the chat
   first: prompt, reference images and results show right in the conversation, no browser
-  needed (an HTML preview page is optional for big batches). Use when: "generate an image", "make this in ChatGPT", "run this prompt
+  needed (over 4 images, the user may pick an HTML page). Use when: "generate an image", "make this in ChatGPT", "run this prompt
   through Codex", "create a poster/flyer/social graphic/ad image", "make a 1080x1350 version",
   "give me a print-ready PDF of this", "edit this photo with ChatGPT", "make 3 variations",
   "batch 12 images", "make a whole set of images from these prompts", or when prompts already
@@ -16,7 +16,7 @@ license: MIT
 user-invocable: true
 argument-hint: "<what to make> [output folder] [size/preset] [format] [padding] [variants]"
 metadata:
-  version: "1.1.0"
+  version: "1.1.1"
   category: images
 ---
 
@@ -33,7 +33,7 @@ that contains this SKILL.md.
 |---|---|
 | `scripts/codex_generate.sh` | One `codex exec` call, built-in `image_gen` tool, raw PNG into a folder. Roughly 1 to 2.5 min per image. |
 | `scripts/finish_image.py` | Size, DPI, padding, fit, background, upscale, format. Deterministic, never overwrites. |
-| `scripts/make_preview.py` | Optional read-only HTML page for big batches (see "Review mode"); during a run it becomes the live results page. Opens from file://, no server. |
+| `scripts/make_preview.py` | Read-only HTML page, only for batches of more than 4 images when the user picks it (see "Review mode"); during a run it becomes the live results page. Opens from file://, no server. |
 | `scripts/batch_generate.py` | Runs the approved manifest (1 or many jobs): generate + finish, 2 at a time, resumable. |
 
 **Why the split:** the built-in `image_gen` tool picks its own pixel size (about 1.5 MP, e.g.
@@ -95,9 +95,13 @@ review handoff; ChatGPT plan image limits are not published and vary.
   for an image-to-video start frame), and reveal the file so it can be dragged in
   (`open -R "<file>"` on macOS, or the host's reveal-in-Finder tool).
 
-**HTML page (optional).** Use `make_preview.py` only when the user asks for a page, or for a
-batch of more than 4 images where side-by-side comparison beats one card per image. Say which
-mode you are using in the handoff.
+**HTML page (only for batches of more than 4 images, and only if the user picks it).** For 1 to
+4 images, never build or open an HTML page: everything stays in the chat. For more than 4,
+**ask before the review** (AskUserQuestion when available): "This batch is N images. Review it
+here in the chat, or open it as an HTML page in your browser?" Offer "Here in the chat" first
+and "HTML page" second, and say the HTML page shows every prompt side by side and fills in with
+results as they finish. Use the answer for the whole batch (review, live results and the final
+report). If the host can't ask, stay in the chat.
 
 ## Source images
 
@@ -178,7 +182,7 @@ with it also counts).
    the prompt table and the defaults you picked, give the image count and a time estimate
    (about 1.5 min per image, halved at concurrency 2), and stop.
 
-   HTML mode (big batches or on request): build the page and open it.
+   HTML mode (more than 4 images, and the user picked the HTML page): build the page and open it.
    ```bash
    python3 "$SKILL_DIR/scripts/make_preview.py" "<manifest>" --raw-dir "<base>/codex-raw" --final-dir "<base>" --title "<Project name>"
    ```

@@ -15,7 +15,8 @@ background, upscale, and format (PNG, JPG, WebP, TIFF, PDF).
 Nothing is generated until you approve it, and you never have to leave the chat. Like the
 ChatGPT app, the reference images, the prompt and the finished image all show up right in the
 conversation (in the Claude desktop app they open in the side panel). You reply "go", or type a
-change in plain words. For big batches you can still ask for a read-only HTML page that shows
+change in plain words. No browser page opens unless you choose one: for a batch of more than 4
+images, Claude asks whether you want to review it in the chat or on an HTML page that shows
 every prompt and result side by side.
 
 ## Why a finishing step
@@ -83,8 +84,8 @@ Claude will:
    that prompt in a copyable block with a link to the tool, and reveal the file in Finder so you
    can drag it in.
 
-Prefer a page? Ask for the HTML preview, or run a batch of more than 4 images: the read-only
-page shows every prompt and reference, then turns into a live results page as images finish,
+Batches of more than 4 images: Claude asks whether to stay in the chat or open an HTML page.
+The read-only page shows every prompt and reference, then turns into a live results page as images finish,
 with a Copy path button on every file.
 
 Output layout:
@@ -105,7 +106,7 @@ They also work on their own.
 |---|---|
 | `scripts/codex_generate.sh` | One image through `codex exec` and `image_gen`. |
 | `scripts/finish_image.py` | Size, DPI, padding, fit, background, upscale, format. |
-| `scripts/make_preview.py` | Optional read-only HTML preview of a manifest for big batches; shows results once a batch runs. |
+| `scripts/make_preview.py` | Read-only HTML preview of a manifest, offered for batches of more than 4 images; shows results once a batch runs. |
 | `scripts/batch_generate.py` | Runs a manifest: 2 at a time by default (max 4), resumable, `--redo NAME`, `--dry-run`. |
 
 Re-finish an existing image without generating a new one:

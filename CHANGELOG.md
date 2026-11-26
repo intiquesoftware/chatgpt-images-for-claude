@@ -3,6 +3,13 @@
 All notable changes to this skill are listed here. Versions follow [semver](https://semver.org/):
 patch = fixes, minor = new presets or flags, major = a change to the manifest format.
 
+## [1.1.1] - 2026-11-25
+
+### Changed
+- The HTML page is never used for 1 to 4 images. For a batch of more than 4, Claude now asks
+  whether to review it in the chat or on the HTML page, with the chat offered first. Before,
+  a big batch went to the HTML page without asking.
+
 ## [1.1.0] - 2026-11-25
 
 ### Changed
@@ -11,7 +18,7 @@ patch = fixes, minor = new presets or flags, major = a change to the manifest fo
   shown as a short labeled table, and tweaks re-post only the rows that changed. No browser
   page is needed for a normal run.
 - The HTML preview (`make_preview.py`) is now optional: used when you ask for it, or for
-  batches of more than 4 images. Scripts and the manifest format are unchanged.
+  batches of more than 4 images (superseded by 1.1.1). Scripts and the manifest format are unchanged.
 
 ### Added
 - Next-step handoff: when an image is a start frame for another tool (for example an
